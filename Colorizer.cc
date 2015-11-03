@@ -31,229 +31,189 @@ namespace gb = gmb::memory;
 using namespace std;
 
 Colorizer::Colorizer()
-{
-   // default constructor
-   
-//   m_items_list = NULL;
-}
-
-//void Colorizer::free_items()
-//{
-//   // frees the memory that the items uses
-//
-//   // check if there is a list
-//   if (m_items_list)
-//   {
-//      SearchData *tmp;
-//
-//      // go through all the elements in the list,
-//      // and free each SearchData instance
-//      while (!m_items_list->is_empty())
-//      {
-//         tmp = m_items_list->first_element();
-//         m_items_list->remove_first();
-//         delete tmp;
-//      }
-//
-//      // delete the list
-//      delete m_items_list;
-//      m_items_list = NULL;
-//   }
-//}
-//
+{ }
 
 Colorizer::Colorizer(const char *cfg_file)
 {
-   // other constructor
-   
-   // sends the cfg_file to the CfgFileParser
-   // gets the items_list from the CfgFileParser and saves it
+  // other constructor
+  
+  // sends the cfg_file to the CfgFileParser
+  // gets the items_list from the CfgFileParser and saves it
 
-   // check that cfg_file isn't NULL
-   assert (cfg_file != NULL);
+  // check that cfg_file isn't NULL
+  assert (cfg_file != NULL);
 
-   CfgFileParser parser;
+  CfgFileParser parser;
 
-   // parse the cfg file
-   int n = parser.parse(cfg_file);
+  // parse the cfg file
+  int n = parser.parse(cfg_file);
 
+  // get the items list
   parser.get_items_list(m_items_list);
-   // get the items list
-   //m_items_list = parser.get_items_list();
 }
 
 Colorizer::~Colorizer()
-{
-   // destructor
-
-   // free the memory the search data items use
-   //free_items();
-}
+{ }
 
 string Colorizer::colorize(const char *str)
 {
-   // colorize the string, returns a new string containing
-   // the colorized version of str
-   // RETURN: new string with result
+  // colorize the string, returns a new string containing
+  // the colorized version of str
+  // RETURN: new string with result
 
-   // check that a list exists
-   //assert (m_items_list != NULL);
+  regmatch_t pmatch[10];
+  int found = 0, submatch = 0, j;
+  char color[MAX_CHARS_READ][20];
+
+  // set all the color strings to empty strings
+  for (int f = 0 ; f < MAX_CHARS_READ ; f++)
+  {
+    color[f][0] = '\0';
+  }
+  
+  // make an iterator
+  ListIterator<gb::shared_ptr<SearchData> > itr(m_items_list);
+
+  // will contain the new string
+  ostringstream newstr;
+  
+  gb::shared_ptr<SearchData> current;
+  int i = 0;
+  // go through all the elements in the list
+  for (itr.init() ; !itr ; ++itr, i++)
+  {
+    current = itr();
+
+    // check for match
+    if (regexec(current->m_preg, str, 10, pmatch, 0) == 0)
+    {
+      // TODO: check for callback function
+      // TODO: call callback function
    
-   regmatch_t pmatch[10];
-   int found = 0, submatch = 0, j;
-   char color[MAX_CHARS_READ][20];
+      found = 1;
 
-   // set all the color strings to empty strings
-   for (int f = 0 ; f < MAX_CHARS_READ ; f++)
-   {
-      color[f][0] = '\0';
-   }
-   
-   // make an iterator
-   ListIterator<gb::shared_ptr<SearchData> > itr(m_items_list);
-
-   // will contain the new string
-   ostringstream newstr;
-   
-   gb::shared_ptr<SearchData> current;
-   int i = 0;
-   // go through all the elements in the list
-   for (itr.init() ; !itr ; ++itr, i++)
-   {
-      current = itr();
-
-      // check for match
-      if (regexec(current->m_preg, str, 10, pmatch, 0) == 0)
+      // Check to see if this is a substring match
+      if (pmatch[1].rm_so != -1)
       {
-	 // TODO: check for callback function
-	 // TODO: call callback function
-	 
-	 found = 1;
+         submatch = 1;
+         // Note: start at offset 1 to get only submatches
 
-	 // Check to see if this is a substring match
-	 if (pmatch[1].rm_so != -1)
-	 {
-	    submatch = 1;
-	    // Note: start at offset 1 to get only submatches
+         for (j = 1 ; pmatch[j].rm_so != -1 && j <= 10 ; j++)
+         {
+           // go through all the character positions
+           // that the submatch is for
+           for (int k = pmatch[j].rm_so ; k < (pmatch[j].rm_eo) ; k++)
+           {
+      
+             // set the color in the color string array
+             strcpy(color[k], current->m_ansi_color_code);
+           }
+         }
+       }
+       else
+       {
+         // not a substring match, colorize whole string.
+         // stop looking for other matches as well
 
-	    for (j = 1 ; pmatch[j].rm_so != -1 && j <= 10 ; j++)
-	    {
-	       // go through all the character positions
-	       // that the submatch is for
-	       for (int k = pmatch[j].rm_so ; k < (pmatch[j].rm_eo) ; k++)
-	       {
-		  
-		  // set the color in the color string array
-		  strcpy(color[k], current->m_ansi_color_code);
-	       }
-	    }
-	 }
-	 else
-	 {
-	    // not a substring match, colorize whole string.
-	    // stop looking for other matches as well
+         submatch = 0;
 
-	    submatch = 0;
+         // write ansi color code
+         newstr << current->m_ansi_color_code;
+         
+         // check if str ends in '\n'
+         int len = strlen(str); 
+         if (str[len-1] == '\n')
+         {
+           for (int a = 0 ; a < len-1 ; a++)
+           {
+             newstr.put(str[a]);
+           }
+         }
+         else
+         {
+           // doesn't end in '\n'
+           newstr << str;
+         }
 
-	    // write ansi color code
-	    newstr << current->m_ansi_color_code;
-	    
-	    // check if str ends in '\n'
-	    int len = strlen(str);	
-	    if (str[len-1] == '\n')
-	    {
-	       for (int a = 0 ; a < len-1 ; a++)
-	       {
-		  newstr.put(str[a]);
-	       }
-	    }
-	    else
-	    {
-	       // doesn't end in '\n'
-	       newstr << str;
-	    }
-
-	    // write ansi reset str and a newline
-	    newstr << ANSI_RESET_STR << endl << ends;
-	    // return the new string
-	    return newstr.str();
-	 }
-      }
+         // write ansi reset str and a newline
+         newstr << ANSI_RESET_STR << endl << ends;
+         // return the new string
+         return newstr.str();
+       }
+     }
    }
 
    // did we get a match
    if (found == 0)
    {
-      // no we didn't
-      // print without color
-      // check if str ends in '\n'
-      if (str[strlen(str)-1] == '\n')
-      {
-	 newstr << str << ends;
-      }
-      else
-      {
-	 // doesn't end in '\n'
-	 newstr << str << endl << ends;
-      }
+     // no we didn't
+     // print without color
+     // check if str ends in '\n'
+     if (str[strlen(str)-1] == '\n')
+     {
+       newstr << str << ends;
+     }
+     else
+     {
+       // doesn't end in '\n'
+       newstr << str << endl << ends;
+     }
 
-      // return the new string
-      return newstr.str();
+     // return the new string
+     return newstr.str();
    }
 
    // did we find submatches?
    if (submatch == 1)
    {
-      int last_was_reset_str = 1;
-      string  last_color_was;
-      // iiterate through all the characters
-      int l = strlen(str);
-      for (i = 0 ; i < l ; i++)
-      {
-	 if (color[i][0] == '\0')
-	 {
-	    // no color for this position
-	    if (last_was_reset_str != 1)
-	    {
-	       // write reset string
-	       newstr << ANSI_RESET_STR;
-	       // remeber that we wrote it
-	       last_was_reset_str = 1;
-	       last_color_was = string();
-	    }
-	 }
-	 else if ( last_color_was != color[i] )
-	 {
-	    // a color for this position
-	    // reset ansi reset string checker
-	    last_was_reset_str = 0;
-	    // write color
-	    newstr << color[i];
-	    // save color
-	    last_color_was = color[i];
-	 }
+     int last_was_reset_str = 1;
+     string  last_color_was;
+     // iiterate through all the characters
+     int l = strlen(str);
+     for (i = 0 ; i < l ; i++)
+     {
+       if (color[i][0] == '\0')
+       {
+         // no color for this position
+         if (last_was_reset_str != 1)
+         {
+            // write reset string
+            newstr << ANSI_RESET_STR;
+            // remeber that we wrote it
+            last_was_reset_str = 1;
+            last_color_was = string();
+         }
+       }
+       else if ( last_color_was != color[i] )
+       {
+          // a color for this position
+          // reset ansi reset string checker
+          last_was_reset_str = 0;
+          // write color
+          newstr << color[i];
+          // save color
+          last_color_was = color[i];
+       }
 
-	 // write current character
-	 newstr.put(str[i]);
-      }
+       // write current character
+       newstr.put(str[i]);
+     }
       
       // check if last wasn't the ansi reset string
-      if (last_was_reset_str != 1)
-      {
-	 // write reset string
-	 newstr << ANSI_RESET_STR;
-      }
+     if (last_was_reset_str != 1)
+     {
+       // write reset string
+       newstr << ANSI_RESET_STR;
+     }
       
-      // write newline and null
-      //newstr << endl << ends;
-      newstr << ends;
-      	 
-      return newstr.str();
-      
+     // write newline and null
+     newstr << ends;
+        
+     return newstr.str();
+     
    }
-   
       
    // should never get here
-	string empty = "";
-   	return empty;
+   string empty = "";
+   return empty;
 }
