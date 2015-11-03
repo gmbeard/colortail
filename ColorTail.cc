@@ -28,7 +28,9 @@
 #include "OptionsParser.h"
 #include "Colorizer.h"
 
+#include "shared_ptr/shared_ptr.hpp"
 
+namespace gb = gmb::memory;
 using namespace std;
 
 // the constructor
@@ -82,7 +84,7 @@ int ColorTail::start(int argc, char **argv)
       // new TailFile object
       TailFile *new_tailfile = new TailFile();
 
-      Colorizer *colorizer = NULL;
+      gb::shared_ptr<Colorizer> colorizer;
 
       // check if colors
       if (options->color)
@@ -96,10 +98,10 @@ int ColorTail::start(int argc, char **argv)
 	    if (options->nr_cfg_files > 0)
 	    {
 	       // yes there is a first config file
-	       colorizer = new Colorizer(options->cfg_filenames[0]);
+	       colorizer = gb::shared_ptr<Colorizer>(new Colorizer(options->cfg_filenames[0]));
 
 	       // open the tailfile
-	       new_tailfile->open(argv[i], colorizer);
+	       new_tailfile->open(argv[i], colorizer.get());
 	    }
 	    else
 	    {
@@ -118,11 +120,11 @@ int ColorTail::start(int argc, char **argv)
 		&& options->cfg_filenames[tailfile_counter] != NULL)
 	    {
 	       // there is a config file
-	       colorizer = new Colorizer
-		  (options->cfg_filenames[tailfile_counter]);
+	       colorizer = gb::shared_ptr<Colorizer>(
+          new Colorizer(options->cfg_filenames[tailfile_counter]));
 
 	       // open the tailfile
-	       new_tailfile->open(argv[i], colorizer);
+	       new_tailfile->open(argv[i], colorizer.get());
 	    }
 	    else
 	    {
@@ -140,8 +142,8 @@ int ColorTail::start(int argc, char **argv)
          }
 		char* ccade = new char[cade.length()+1];
 		strcpy(ccade, cade.c_str());
-		colorizer = new Colorizer(ccade);
-		new_tailfile->open(argv[i], colorizer);
+		colorizer = gb::shared_ptr<Colorizer>(new Colorizer(ccade));
+		new_tailfile->open(argv[i], colorizer.get());
 	    }
 	 }
       }

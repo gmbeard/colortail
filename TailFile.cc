@@ -25,39 +25,22 @@
 
 #include "TailFile.h"
 
+namespace gb = gmb::memory;
 using namespace std;
 
 TailFile::TailFile()
+  : m_file(NULL),
+    m_position(0),
+    reopening(0)
 {
-   m_filename = NULL;
-   m_file = NULL;
-   m_colorizer = NULL;
-   m_position = 0;
-   m_follow_buffer = NULL;
    memset(&m_file_stats, 0, sizeof(struct stat));
-   reopening = 0;
 }
 
 TailFile::~TailFile()
 {
-   if (m_filename)
-   {
-      delete m_filename;
-   }
-   
    if (m_file)
    {
       fclose(m_file);
-   }
-   
-   if (m_colorizer)
-   {
-      delete m_colorizer;
-   }
-
-   if (m_follow_buffer)
-   {
-      delete m_follow_buffer;
    }
 }
 
@@ -67,15 +50,21 @@ int TailFile::reopen()
     fclose(m_file);
   m_file = NULL;
 
-  if (m_follow_buffer)
-    delete m_follow_buffer;
-  m_follow_buffer = NULL;
   m_position = 0;
   memset(&m_file_stats, 0, sizeof(struct stat));
   reopening = 1;
-  char *tmp = m_filename;
-  int ret = open(m_filename, m_colorizer);
-  delete tmp;
+
+  char_ptr tmp((char *)malloc(strlen(m_filename.get()) + 1), free);
+  strcpy(tmp.get(), m_filename.get());
+
+  gb::shared_ptr<Colorizer> tmp_color;
+
+  if(m_colorizer) {
+    tmp_color = gb::shared_ptr<Colorizer>(new Colorizer(*m_colorizer));
+  }
+
+  int ret = open(tmp.get(), tmp_color.get());
+
   reopening = 0;
   return ret;
 }
@@ -95,8 +84,8 @@ int TailFile::open(char *filename, Colorizer *colorizer)
    else
    {
       // save filename
-      m_filename = new char[strlen(filename) + 1];
-      strcpy(m_filename, filename);
+      m_filename = char_ptr((char *)malloc(strlen(filename) + 1), free);
+      strcpy(m_filename.get(), filename);
 
       // tries to open the file
       if (strcmp (filename, "-") == 0)
@@ -114,7 +103,12 @@ int TailFile::open(char *filename, Colorizer *colorizer)
       }
 
       // set the colorizer
-      m_colorizer = colorizer;
+      if(NULL != colorizer) {
+        m_colorizer = gb::shared_ptr<Colorizer>(new Colorizer(*colorizer));
+      }
+      else {
+        m_colorizer = gb::shared_ptr<Colorizer>();
+      }
 
       // set the saved stream position used to see if the file has
       // changed size to the end of the file
@@ -178,13 +172,13 @@ void TailFile::printFilename()
 {
    // prints the filename to stdout
 
-   cout << "==> " << m_filename << " <==" << endl;
+   cout << "==> " << m_filename.get() << " <==" << endl;
 }
 
 char* TailFile::get_filename()
 {
    // returns the filename
-   return m_filename;
+   return m_filename.get();
 }
 
 void TailFile::printAll()
@@ -302,7 +296,7 @@ long TailFile::end_of_file_position()
    struct stat file_stats;
 
    // get the stats for the current file
-   int ret = stat(m_filename, &file_stats);
+   int ret = stat(m_filename.get(), &file_stats);
 
    if (ret != 0)
    {
@@ -314,7 +308,7 @@ long TailFile::end_of_file_position()
      {
        if (!reopen())
 	 {
-	   int ret = stat(m_filename, &file_stats);
+	   int ret = stat(m_filename.get(), &file_stats);
 	   if (ret)
 	     return 0;
 	 }
@@ -375,9 +369,9 @@ void TailFile::follow_print(int n, int verbose, char *last_filename)
    }
 
    // check if there isn't a follow buffer
-   if (m_follow_buffer == NULL)
+   if (!m_follow_buffer)
    {
-      m_follow_buffer = new ostringstream();
+      m_follow_buffer = gb::shared_ptr<ostringstream>(new ostringstream());
    }
 
    // reset saved EOF result, see man fgetc(3)
@@ -410,7 +404,7 @@ void TailFile::follow_print(int n, int verbose, char *last_filename)
 	    {
 	       // last_filename isn't NULL
 	       // check if same filename
-	       if (strcmp(last_filename, m_filename) != 0)
+	       if (strcmp(last_filename, m_filename.get()) != 0)
 	       {
 		  // not same file
 		  // print the name of this file
@@ -427,10 +421,6 @@ void TailFile::follow_print(int n, int verbose, char *last_filename)
 	 // print the line
 	 print_to_stdout(str);
 
-	 // free the mem
-	 delete m_follow_buffer;
-	 m_follow_buffer = NULL;
-	 
 	 // update the saved stream position with the no of characters
 	 // until and including the '\n'
 
@@ -469,7 +459,4 @@ void TailFile::print_to_stdout(const char *str)
       cout << str;
    }
 }
-
-
-
 

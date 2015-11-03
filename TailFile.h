@@ -21,6 +21,7 @@
 #define _TailFile_h_
 
 #include "Colorizer.h"
+#include "shared_ptr/shared_ptr.hpp"
 
 #include <stdio.h>
 #include <sstream>
@@ -30,55 +31,58 @@
 
 class TailFile
 {
-  private:
+private:
+
+  typedef gmb::memory::shared_ptr<char, void(*)(void *)> char_ptr;
+
    // attributes
    // the tail file's filename
-   char *m_filename;
-   // the file
-   FILE *m_file;
-   // the colorizer
-   Colorizer *m_colorizer;
-   // the stream position
-   long m_position;
-   // the follow buffer, used in follow_print
-   std::ostringstream *m_follow_buffer;
-   // to detect a changed inode for reopening
-   struct stat m_file_stats;
-   int reopening;
+  char_ptr m_filename;
+  // the file
+  FILE *m_file;
+  // the colorizer
+  gmb::memory::shared_ptr<Colorizer> m_colorizer;
+  // the stream position
+  long m_position;
+  // the follow buffer, used in follow_print
+  gmb::memory::shared_ptr<std::ostringstream> m_follow_buffer;
+  // to detect a changed inode for reopening
+  struct stat m_file_stats;
+  int reopening;
 
-   // private methods
-   void find_position(int n);
-   long end_of_file_position();
-   void print_to_stdout(const char *str);
-   
-   // methods   
-  public:
-   TailFile();
-   ~TailFile();
+  // private methods
+  void find_position(int n);
+  long end_of_file_position();
+  void print_to_stdout(const char *str);
+  
+// methods   
+public:
+  TailFile();
+  ~TailFile();
 
-   // opens the file
-   int open(char *filename, Colorizer *colorizer);
+  // opens the file
+  int open(char *filename, Colorizer *colorizer);
 
-   // reopen the file when the inode has changed (log rotation)
-   int reopen();
-   
-   // prints last n rows
-   void print(int n);
+  // reopen the file when the inode has changed (log rotation)
+  int reopen();
+  
+  // prints last n rows
+  void print(int n);
 
-   // prints a line if there is a '\n' in the n bytes that can be read
-   void follow_print(int n, int verbose, char *last_filename);
-   
-   // returns if more to read
-   int more_to_read();
+  // prints a line if there is a '\n' in the n bytes that can be read
+  void follow_print(int n, int verbose, char *last_filename);
+  
+  // returns if more to read
+  int more_to_read();
 
-   // prints the filename
-   void printFilename();
+  // prints the filename
+  void printFilename();
 
-   // returns the filename
-   char* get_filename();
-   
-   // prints the complete file, for debugging
-   void printAll();
+  // returns the filename
+  char* get_filename();
+  
+  // prints the complete file, for debugging
+  void printAll();
 
 };
 

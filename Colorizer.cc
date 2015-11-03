@@ -33,6 +33,10 @@ using namespace std;
 Colorizer::Colorizer()
 { }
 
+Colorizer::Colorizer(Colorizer const &other)
+  : m_items_list(other.m_items_list)
+{ }
+
 Colorizer::Colorizer(const char *cfg_file)
 {
   // other constructor

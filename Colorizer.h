@@ -39,6 +39,7 @@ class Colorizer
       
   public:
       Colorizer(const char *cfg_file);
+      Colorizer(Colorizer const &);
       ~Colorizer();
 
       string colorize(const char *str);
