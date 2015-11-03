@@ -24,6 +24,7 @@
 #include <cstring>
 #include <stdlib.h>
 
+namespace gb = gmb::memory;
 using namespace std;
 
 // ## class SearchData ##
@@ -71,41 +72,17 @@ void SearchData::set_color(char *color)
 
 CfgFileParser::CfgFileParser()
 {
-   m_items_list = NULL;
+   //m_items_list = NULL;
    m_filename = NULL;
    m_line = 0;
 }
 
 CfgFileParser::~CfgFileParser()
 {
-   free_items();
+   //free_items();
    if (m_filename)
    {
       delete m_filename;
-   }
-}
-
-void CfgFileParser::free_items()
-{
-   // frees the memory that the items uses
-
-   // check if there is a list
-   if (m_items_list)
-   {
-      SearchData *tmp;
-
-      // go through all the elements in the list,
-      // and free each SearchData instance
-      while (!m_items_list->is_empty())
-      {
-	 tmp = m_items_list->first_element();
-	 m_items_list->remove_first();
-	 delete tmp;
-      }
-
-      // delete the list
-      delete m_items_list;
-      m_items_list = NULL;
    }
 }
 
@@ -145,7 +122,7 @@ int CfgFileParser::read_item()
    int nr_items_added = 0;
    
    // is there a list?
-   assert (m_items_list != NULL);
+   //assert (m_items_list != NULL);
 
    // is there a open file?
    assert (m_infile);
@@ -186,9 +163,9 @@ int CfgFileParser::read_item()
 	    
 	    // has a regexp.. make a SearchData item
 	    
-	    SearchData *searchdata = new SearchData();
+	    gb::shared_ptr<SearchData> searchdata(new SearchData());
 	    // check allocation
-	    assert (searchdata != NULL);
+	    assert (searchdata);
 	    
 	    // set color
 	    searchdata->set_color(color);
@@ -205,9 +182,6 @@ int CfgFileParser::read_item()
 	       cout << "colortail: Failed to make compiled reg exp pattern for "
 		    << "reg exp in config file " << m_filename << " at line "
 		    << m_line << ". Skipping this line." << endl;
-	       
-	       // free mem
-	       delete searchdata;
 	    }
 	    else
 	    {
@@ -215,7 +189,7 @@ int CfgFileParser::read_item()
 	       // TODO: set param to callback fkn
 	       
 	       // add the search data item to the items list
-	       m_items_list->add(searchdata);
+	       m_items_list.add(searchdata);
 	       // increase items added counter
 	       nr_items_added++;
 	    }
@@ -488,18 +462,14 @@ int CfgFileParser::parse(const char *filename)
    // returns number of SearchData items created
 
    // is there a list?
-   if (m_items_list)
+   if (!m_items_list.is_empty())
    {
       // delete it
-      free_items();
+      m_items_list.delete_all_values();
    }
 
-   // make a new list
-   m_items_list = new List<SearchData*>;
+   assert(m_items_list.is_empty());
 
-   // check the allocation
-   assert (m_items_list != NULL);
-  
    // try to open the file
    m_infile.open(filename, ios::in);
 
@@ -534,20 +504,17 @@ int CfgFileParser::parse(const char *filename)
    return items_counter;
 }
       
-List<SearchData*>* CfgFileParser::get_items_list()
+void CfgFileParser::get_items_list(List<gb::shared_ptr<SearchData> > &list)
 {
-   // returns the items list, and sets this class item list to NULL
+  ListIterator<gb::shared_ptr<SearchData> > iter(m_items_list);
 
-   List<SearchData*>* tmp = m_items_list;
-   m_items_list = NULL;
+  for(iter.init();
+      !iter;
+      ++iter) {
 
-   return tmp;
+    list.add(iter());
+  }
+
+  m_items_list.delete_all_values();
 }
-
 	 
-      
-
-
-
-
-

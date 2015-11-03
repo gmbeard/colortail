@@ -25,39 +25,42 @@
 #include <iostream>
 #include <string.h>
 
+#include "shared_ptr/shared_ptr.hpp"
+
+namespace gb = gmb::memory;
 using namespace std;
 
 Colorizer::Colorizer()
 {
    // default constructor
    
-   m_items_list = NULL;
+//   m_items_list = NULL;
 }
 
-void Colorizer::free_items()
-{
-   // frees the memory that the items uses
-
-   // check if there is a list
-   if (m_items_list)
-   {
-      SearchData *tmp;
-
-      // go through all the elements in the list,
-      // and free each SearchData instance
-      while (!m_items_list->is_empty())
-      {
-         tmp = m_items_list->first_element();
-         m_items_list->remove_first();
-         delete tmp;
-      }
-
-      // delete the list
-      delete m_items_list;
-      m_items_list = NULL;
-   }
-}
-
+//void Colorizer::free_items()
+//{
+//   // frees the memory that the items uses
+//
+//   // check if there is a list
+//   if (m_items_list)
+//   {
+//      SearchData *tmp;
+//
+//      // go through all the elements in the list,
+//      // and free each SearchData instance
+//      while (!m_items_list->is_empty())
+//      {
+//         tmp = m_items_list->first_element();
+//         m_items_list->remove_first();
+//         delete tmp;
+//      }
+//
+//      // delete the list
+//      delete m_items_list;
+//      m_items_list = NULL;
+//   }
+//}
+//
 
 Colorizer::Colorizer(const char *cfg_file)
 {
@@ -74,8 +77,9 @@ Colorizer::Colorizer(const char *cfg_file)
    // parse the cfg file
    int n = parser.parse(cfg_file);
 
+  parser.get_items_list(m_items_list);
    // get the items list
-   m_items_list = parser.get_items_list();
+   //m_items_list = parser.get_items_list();
 }
 
 Colorizer::~Colorizer()
@@ -83,7 +87,7 @@ Colorizer::~Colorizer()
    // destructor
 
    // free the memory the search data items use
-   free_items();
+   //free_items();
 }
 
 string Colorizer::colorize(const char *str)
@@ -93,7 +97,7 @@ string Colorizer::colorize(const char *str)
    // RETURN: new string with result
 
    // check that a list exists
-   assert (m_items_list != NULL);
+   //assert (m_items_list != NULL);
    
    regmatch_t pmatch[10];
    int found = 0, submatch = 0, j;
@@ -106,12 +110,12 @@ string Colorizer::colorize(const char *str)
    }
    
    // make an iterator
-   ListIterator<SearchData*> itr(*m_items_list);
+   ListIterator<gb::shared_ptr<SearchData> > itr(m_items_list);
 
    // will contain the new string
    ostringstream newstr;
    
-   SearchData *current;
+   gb::shared_ptr<SearchData> current;
    int i = 0;
    // go through all the elements in the list
    for (itr.init() ; !itr ; ++itr, i++)

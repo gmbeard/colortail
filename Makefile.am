@@ -1,7 +1,8 @@
-
 SUBDIRS = example-conf
 
 bin_PROGRAMS = colortail
+
+colortail_CPPFLAGS = -I$(top_srcdir)/modules/shared_ptr
 
 colortail_SOURCES = \
 CfgFileParser.cc \

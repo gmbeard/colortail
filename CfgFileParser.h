@@ -22,13 +22,13 @@
 
 #include "List.h"
 #include "config.h"
+#include "shared_ptr/shared_ptr.hpp"
 
 #include <sys/types.h>
 #include <regex.h>
 #include <iostream>
 #include <fstream>
 #include <string>
-
 #ifdef HAVE_GNUREGEX_H
 # include <gnuregex.h>
 #else
@@ -81,7 +81,7 @@ class SearchData
 class CfgFileParser
 {
   private:
-   List<SearchData*> *m_items_list;
+   List<gmb::memory::shared_ptr<SearchData> > m_items_list;
    std::ifstream m_infile;
    char *m_filename;
    int m_line;
@@ -100,7 +100,8 @@ class CfgFileParser
    ~CfgFileParser();
 
    int parse(const char *filename);
-   List<SearchData*>* get_items_list();
+   //List<gmb::memory::shared_ptr<SearchData> >* get_items_list();
+   void get_items_list(List<gmb::memory::shared_ptr<SearchData> > &);
 };
 
 #endif

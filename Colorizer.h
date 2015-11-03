@@ -22,6 +22,7 @@
 
 #include "List.h"
 #include "CfgFileParser.h"
+#include "shared_ptr/shared_ptr.hpp"
 
 using namespace std;
 
@@ -30,9 +31,9 @@ using namespace std;
 class Colorizer
 {
   private:
-   List<SearchData*> *m_items_list;
+   List<gmb::memory::shared_ptr<SearchData> > m_items_list;
 
-   void free_items();
+   //void free_items();
    
    Colorizer();
       
