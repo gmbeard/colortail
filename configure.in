@@ -35,6 +35,6 @@ dnl Checks for library functions.
 AC_TYPE_SIGNAL
 AC_CHECK_FUNCS(regcomp)
 
-AC_OUTPUT(Makefile example-conf/Makefile)
+AC_OUTPUT(Makefile example-conf/Makefile tests/Makefile)
 
 

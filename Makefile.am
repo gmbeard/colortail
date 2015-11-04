@@ -1,4 +1,4 @@
-SUBDIRS = example-conf
+SUBDIRS = example-conf tests
 
 bin_PROGRAMS = colortail
 
