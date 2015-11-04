@@ -128,7 +128,7 @@ void TailFile::print(int n)
   //   const bufSize = 1024;
   char buf[MAX_CHARS_READ];
 
-  while(NULL != fgets(&buf[0], sizeof(buf)-1, m_file)) {
+  while(NULL != fgets(&buf[0], sizeof(buf), m_file)) {
     print_to_stdout(&buf[0]);
   }
 
@@ -337,7 +337,7 @@ void TailFile::follow_print(int n, int verbose, char *last_filename)
   //  Clear any error flags on the file pointer...
   clearerr(m_file);
 
-  static char buf[MAX_CHARS_READ+1];
+  static char buf[MAX_CHARS_READ];
 
   // Loop for each line (or block of MAX_CHARS_READ size) ...
   while(NULL != fgets(&buf[0], MAX_CHARS_READ, m_file)) {
@@ -378,14 +378,14 @@ void TailFile::print_to_stdout(const char *str)
       // colorize the string
       string res = m_colorizer->colorize(str);
       // print the new colorized string
-      cout << res;
+      cout.write(res.c_str(), res.size());
    }
    else
    {
       // don't colorize
 
       // print the line
-      cout << str;
+      cout.write(str, strlen(str));
    }
 }
 

@@ -126,22 +126,10 @@ string Colorizer::colorize(const char *str)
          newstr << current->m_ansi_color_code;
          
          // check if str ends in '\n'
-//         int len = strlen(str); 
-//         if (str[len-1] == '\n')
-//         {
-//           for (int a = 0 ; a < len-1 ; a++)
-//           {
-//             newstr.put(str[a]);
-//           }
-//         }
-//         else
-//         {
-           // doesn't end in '\n'
-           newstr << str;
- //        }
+         newstr << str;
 
          // write ansi reset str and a newline
-         newstr << ANSI_RESET_STR; // << endl << ends;
+         newstr.write(ANSI_RESET_STR, strlen(ANSI_RESET_STR)); // << endl << ends;
          // return the new string
          return newstr.str();
        }
@@ -154,17 +142,9 @@ string Colorizer::colorize(const char *str)
      // no we didn't
      // print without color
      // check if str ends in '\n'
-//     if (str[strlen(str)-1] == '\n')
-//     {
-       newstr << str;
-//     }
-//     else
-//     {
-//       // doesn't end in '\n'
-//       newstr << str << endl << ends;
-//     }
+     newstr.write(str, strlen(str));
 
-       newstr << ANSI_RESET_STR;
+     newstr.write(ANSI_RESET_STR, strlen(ANSI_RESET_STR));
      // return the new string
      return newstr.str();
    }
@@ -184,7 +164,7 @@ string Colorizer::colorize(const char *str)
          if (last_was_reset_str != 1)
          {
             // write reset string
-            newstr << ANSI_RESET_STR;
+            newstr.write(ANSI_RESET_STR, strlen(ANSI_RESET_STR));
             // remeber that we wrote it
             last_was_reset_str = 1;
             last_color_was = string();
@@ -209,7 +189,7 @@ string Colorizer::colorize(const char *str)
 //     if (last_was_reset_str != 1)
 //     {
        // write reset string
-       newstr << ANSI_RESET_STR;
+       newstr.write(ANSI_RESET_STR, strlen(ANSI_RESET_STR));
 //     }
       
      // write newline and null

@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "ColorTailTypes.h"
 #include "ColorTail.h"
 #include "TailFile.h"
 #include "OptionsParser.h"
@@ -33,9 +34,7 @@ using namespace std;
 
 // the constructor
 ColorTail::ColorTail()
-{
-   // nothing yet
-}
+{ }
 
 // the destructor
 ColorTail::~ColorTail()
@@ -44,200 +43,203 @@ ColorTail::~ColorTail()
 // the starting method
 int ColorTail::start(int argc, char **argv)
 {
-   // parse options
-   OptionsParser optParser;
-   Options *options = optParser.parse(argc, argv);
+  // parse options
+  OptionsParser optParser;
+  Options *options = optParser.parse(argc, argv);
 
-   assert (options != NULL);
+  assert (options != NULL);
 
-   // the options has been stripped from argc and argv, just the
-   // files to tail and the program namn left
+  // the options has been stripped from argc and argv, just the
+  // files to tail and the program namn left
 
-   // tailfile counter
-   int tailfile_counter = 0;
+  // tailfile counter
+  int tailfile_counter = 0;
 
-   // iterate through all the files to tail
-   for (int i = optind ; i < argc ; i++)
-   {
-      // new TailFile object
-      gb::shared_ptr<TailFile> new_tailfile(new TailFile());
+  // iterate through all the files to tail
+  for (int i = optind ; i < argc ; i++)
+  {
+    // new TailFile object
+    gb::shared_ptr<TailFile> new_tailfile(new TailFile());
 
-      gb::shared_ptr<Colorizer> colorizer;
+    gb::shared_ptr<Colorizer> colorizer;
 
-      // check if colors
-      if (options->color)
+    // check if colors
+    if (options->color)
+    {
+      // color output
+      // check if global config file
+      if (options->global_cfg_file)
       {
-	 // color output
-	 // check if global config file
-	 if (options->global_cfg_file)
-	 {
-	    // global config file
-	    // check if there is a config file
-	    if (options->nr_cfg_files > 0)
-	    {
-	       // yes there is a first config file
-	       colorizer = gb::shared_ptr<Colorizer>(new Colorizer(options->cfg_filenames[0]));
+        // global config file
+        // check if there is a config file
+        if (options->nr_cfg_files > 0)
+        {
+          // yes there is a first config file
+          colorizer = gb::shared_ptr<Colorizer>(new Colorizer(options->cfg_filenames[0]));
 
-	       // open the tailfile
-	       new_tailfile->open(argv[i], colorizer);
-	    }
-	    else
-	    {
-	       // no config file
-	       // print error
-	       cout << "colortail: Couldn't open global color config file. Skipping colors for the " << argv[i] << " file." << endl;
-               // open the tailfile without colorizer
-	       new_tailfile->open(argv[i], gb::shared_ptr<Colorizer>());
-	    }
-	 }
-	 else
-	 {
-	    // individual config files
-	    // check if there is a config file
-	    if (options->nr_cfg_files > tailfile_counter
-		&& options->cfg_filenames[tailfile_counter] != NULL)
-	    {
-	       // there is a config file
-	       colorizer = gb::shared_ptr<Colorizer>(
-          new Colorizer(options->cfg_filenames[tailfile_counter]));
-
-	       // open the tailfile
-	       new_tailfile->open(argv[i], colorizer);
-	    }
-	    else
-	    {
-	       // no config file
-	       // no error message because it can be cfgfile1,,cfgfile2
-         // check for configuration file in home dir and global
-         string cade = getenv("HOME");
-         cade += "/.colortail/conf.colortail";
-         if(!fopen(cade.c_str(), "r")){
-           // open failed
-           cade = "/etc/colortail/conf.colortail";
-           if(!fopen(cade.c_str(), "r")){
-             cade.clear();
-           }
-         }
-		char* ccade = new char[cade.length()+1];
-		strcpy(ccade, cade.c_str());
-		colorizer = gb::shared_ptr<Colorizer>(new Colorizer(ccade));
-		new_tailfile->open(argv[i], colorizer);
-	    }
-	 }
+          // open the tailfile
+          new_tailfile->open(argv[i], colorizer);
+        }
+        else
+        {
+          // no config file
+          // print error
+          cout << "colortail: Couldn't open global color config file. Skipping colors for the " << argv[i] << " file." << endl;
+          // open the tailfile without colorizer
+          new_tailfile->open(argv[i], gb::shared_ptr<Colorizer>());
+        }
       }
       else
       {
-	 // no colors
+        // individual config files
+        // check if there is a config file
+        if (options->nr_cfg_files > tailfile_counter
+            && options->cfg_filenames[tailfile_counter] != NULL)
+        {
+          // there is a config file
+          colorizer = gb::shared_ptr<Colorizer>(
+          new Colorizer(options->cfg_filenames[tailfile_counter]));
 
-	 // open the tailfile without colorizer
-	 new_tailfile->open(argv[i], gb::shared_ptr<Colorizer>());
+          // open the tailfile
+          new_tailfile->open(argv[i], colorizer);
+        }
+        else
+        {
+          // no config file
+          // no error message because it can be cfgfile1,,cfgfile2
+          // check for configuration file in home dir and global
+          string cade = getenv("HOME");
+          cade += "/.colortail/conf.colortail";
+          if(!fopen(cade.c_str(), "r")){
+            // open failed
+            cade = "/etc/colortail/conf.colortail";
+            if(!fopen(cade.c_str(), "r")){
+              cade.clear();
+            }
+          }
+
+          if(cade.length()) {
+            char_ptr ccade = make_char_ptr(cade.length()+1);
+            strcpy(ccade.get(), cade.c_str());
+            colorizer = gb::shared_ptr<Colorizer>(new Colorizer(ccade.get()));
+          }
+          new_tailfile->open(argv[i], colorizer);
+        }
+      }
+    }
+    else
+    {
+      // no colors
+
+      // open the tailfile without colorizer
+      new_tailfile->open(argv[i], gb::shared_ptr<Colorizer>());
+    }
+
+    // add the tailfile to the end of the tailfile list
+    m_tailfiles.add_last(new_tailfile);
+
+    // increase the tailfile counter
+    tailfile_counter++;
+  }
+
+  // check if not follow-mode
+  if (options->follow == 0)
+  {
+    // not follow-mode, just print the tails of the files in the list
+
+    // make an iterator
+    ListIterator<gb::shared_ptr<TailFile> > itr(m_tailfiles);
+    gb::shared_ptr<TailFile> current_file;
+
+    // iterate through the file list
+    for (itr.init() ; !itr ; ++itr)
+    {
+      current_file = itr();
+
+      // check if verbose mode
+      if (options->verbose)
+      {
+        // print filename
+        current_file->printFilename();
       }
 
-      // add the tailfile to the end of the tailfile list
-      m_tailfiles.add_last(new_tailfile);
+      // print the specified number of rows
+      current_file->print(options->rows);
+    }
+  }
+  else
+  {
+    // follow mode
 
-      // increase the tailfile counter
-      tailfile_counter++;
-   }
+    // make an iterator
+    ListIterator<gb::shared_ptr<TailFile> > itr(m_tailfiles);
+    gb::shared_ptr<TailFile> current_file;
 
-   // check if not follow-mode
-   if (options->follow == 0)
-   {
-      // not follow-mode, just print the tails of the files in the list
+    // iterate through the file list and print the no of rows wanted
+    for (itr.init() ; !itr ; ++itr)
+    {
+      current_file = itr();
 
-      // make an iterator
-      ListIterator<gb::shared_ptr<TailFile> > itr(m_tailfiles);
-      gb::shared_ptr<TailFile> current_file;
+      // check if more than zero rows
+      if (options->rows > 0)
+      {
+        // check if verbose mode
+        if (options->verbose)
+        {
+          // print filename
+          current_file->printFilename();
+        }
+      }
 
-      // iterate through the file list
+      // print the specified number of rows
+      current_file->print(options->rows);
+    }
+
+    // the "forever" part
+
+    // keeps track of the last file a line was printed from
+    char *last_filename = NULL;
+    int changed = 0;
+    while (1)
+    {
+      // iterate through the file list and check if the
+      // file size has changed.
+
       for (itr.init() ; !itr ; ++itr)
       {
-	 current_file = itr();
+        current_file = itr();
 
-	 // check if verbose mode
-	 if (options->verbose)
-	 {
-	    // print filename
-	    current_file->printFilename();
-	 }
+        int n = current_file->more_to_read();
+        if (n != 0)
+        {
+          // file size has changed
+          // print the change, if there is a '\n'
+          current_file->follow_print(n, options->verbose,last_filename);
 
-	 // print the specified number of rows
-	 current_file->print(options->rows);
+          // get the filename of this file
+          last_filename = current_file->get_filename();
+
+          // set the changed boolean
+          changed = 1;
+        }
       }
-   }
-   else
-   {
-      // follow mode
 
-      // make an iterator
-      ListIterator<gb::shared_ptr<TailFile> > itr(m_tailfiles);
-      gb::shared_ptr<TailFile> current_file;
-
-      // iterate through the file list and print the no of rows wanted
-      for (itr.init() ; !itr ; ++itr)
+      // check if changed
+      if (changed)
       {
-	 current_file = itr();
+        // something changed
 
-	 // check if more than zero rows
-	 if (options->rows > 0)
-	 {
-	    // check if verbose mode
-	    if (options->verbose)
-	    {
-	       // print filename
-	       current_file->printFilename();
-	    }
-	 }
-
-	 // print the specified number of rows
-	 current_file->print(options->rows);
+        // clear the flag
+        changed = 0;
       }
-
-      // the "forever" part
-
-      // keeps track of the last file a line was printed from
-      char *last_filename = NULL;
-      int changed = 0;
-      while (1)
+      else
       {
-	 // iterate through the file list and check if the
-	 // file size has changed.
+        // nothing changed
 
-	 for (itr.init() ; !itr ; ++itr)
-	 {
-	    current_file = itr();
-
-	    int n = current_file->more_to_read();
-	    if (n != 0)
-	    {
-	       // file size has changed
-	       // print the change, if there is a '\n'
-	       current_file->follow_print(n, options->verbose,last_filename);
-
-	       // get the filename of this file
-	       last_filename = current_file->get_filename();
-
-	       // set the changed boolean
-	       changed = 1;
-	    }
-	 }
-
-	 // check if changed
-	 if (changed)
-	 {
-	    // something changed
-
-	    // clear the flag
-	    changed = 0;
-	 }
-	 else
-	 {
-	    // nothing changed
-
-	    // sleep one second
-	    sleep(1);
-	 }
+        // sleep one second
+        sleep(1);
       }
-   }
-   return 0;
+    }
+  }
+  return 0;
 }
