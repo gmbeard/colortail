@@ -20,6 +20,7 @@
 #ifndef _TailFile_h_
 #define _TailFile_h_
 
+#include "ColorTailTypes.h"
 #include "Colorizer.h"
 #include "shared_ptr/shared_ptr.hpp"
 
@@ -27,13 +28,15 @@
 #include <sstream>
 #include <sys/stat.h>
 
-#define MAX_CHARS_READ 1024
+#ifndef MAX_CHARS_READ
+# define MAX_CHARS_READ 1024
+#endif
 
 class TailFile
 {
 private:
 
-  typedef gmb::memory::shared_ptr<char, void(*)(void *)> char_ptr;
+TESTING_FORCE_PUBLIC
 
    // attributes
    // the tail file's filename
@@ -44,8 +47,6 @@ private:
   gmb::memory::shared_ptr<Colorizer> m_colorizer;
   // the stream position
   long m_position;
-  // the follow buffer, used in follow_print
-  gmb::memory::shared_ptr<std::ostringstream> m_follow_buffer;
   // to detect a changed inode for reopening
   struct stat m_file_stats;
   int reopening;
@@ -54,14 +55,14 @@ private:
   void find_position(int n);
   long end_of_file_position();
   void print_to_stdout(const char *str);
-  
+TESTING_FORCE_BACK_TO(private)  
 // methods   
 public:
   TailFile();
   ~TailFile();
 
   // opens the file
-  int open(char *filename, Colorizer *colorizer);
+  int open(char *filename, gmb::memory::shared_ptr<Colorizer> colorizer);
 
   // reopen the file when the inode has changed (log rotation)
   int reopen();

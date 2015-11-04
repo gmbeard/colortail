@@ -20,9 +20,20 @@
 #ifndef _Colorizer_h_
 #define _Colorizer_h_
 
+#include "config.h"
 #include "List.h"
 #include "CfgFileParser.h"
 #include "shared_ptr/shared_ptr.hpp"
+
+#ifdef UNIT_TESTING
+# define TESTING_FORCE_PUBLIC \
+  public:
+# define TESTING_FORCE_BACK_TO(x) \
+   x:
+#else
+# define TESTING_FORCE_PUBLIC
+# define TESTING_FORCE_BACK_TO(x)
+#endif
 
 using namespace std;
 
@@ -31,11 +42,14 @@ using namespace std;
 class Colorizer
 {
   private:
+TESTING_FORCE_PUBLIC
    List<gmb::memory::shared_ptr<SearchData> > m_items_list;
 
    //void free_items();
-   
+
    Colorizer();
+
+TESTING_FORCE_BACK_TO(private)
       
   public:
       Colorizer(const char *cfg_file);

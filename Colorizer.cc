@@ -65,7 +65,7 @@ string Colorizer::colorize(const char *str)
   // the colorized version of str
   // RETURN: new string with result
 
-  regmatch_t pmatch[10];
+  regmatch_t pmatch[11];
   int found = 0, submatch = 0, j;
   char color[MAX_CHARS_READ][20];
 
@@ -89,7 +89,8 @@ string Colorizer::colorize(const char *str)
     current = itr();
 
     // check for match
-    if (regexec(current->m_preg, str, 10, pmatch, 0) == 0)
+    memset(&pmatch[0], 0, sizeof(pmatch));
+    if (regexec(current->m_preg.get(), str, 10, pmatch, 0) == 0)
     {
       // TODO: check for callback function
       // TODO: call callback function
@@ -110,7 +111,7 @@ string Colorizer::colorize(const char *str)
            {
       
              // set the color in the color string array
-             strcpy(color[k], current->m_ansi_color_code);
+             strcpy(color[k], current->m_ansi_color_code.get());
            }
          }
        }
@@ -125,22 +126,22 @@ string Colorizer::colorize(const char *str)
          newstr << current->m_ansi_color_code;
          
          // check if str ends in '\n'
-         int len = strlen(str); 
-         if (str[len-1] == '\n')
-         {
-           for (int a = 0 ; a < len-1 ; a++)
-           {
-             newstr.put(str[a]);
-           }
-         }
-         else
-         {
+//         int len = strlen(str); 
+//         if (str[len-1] == '\n')
+//         {
+//           for (int a = 0 ; a < len-1 ; a++)
+//           {
+//             newstr.put(str[a]);
+//           }
+//         }
+//         else
+//         {
            // doesn't end in '\n'
            newstr << str;
-         }
+ //        }
 
          // write ansi reset str and a newline
-         newstr << ANSI_RESET_STR << endl << ends;
+         newstr << ANSI_RESET_STR; // << endl << ends;
          // return the new string
          return newstr.str();
        }
@@ -153,16 +154,17 @@ string Colorizer::colorize(const char *str)
      // no we didn't
      // print without color
      // check if str ends in '\n'
-     if (str[strlen(str)-1] == '\n')
-     {
-       newstr << str << ends;
-     }
-     else
-     {
-       // doesn't end in '\n'
-       newstr << str << endl << ends;
-     }
+//     if (str[strlen(str)-1] == '\n')
+//     {
+       newstr << str;
+//     }
+//     else
+//     {
+//       // doesn't end in '\n'
+//       newstr << str << endl << ends;
+//     }
 
+       newstr << ANSI_RESET_STR;
      // return the new string
      return newstr.str();
    }
@@ -204,14 +206,14 @@ string Colorizer::colorize(const char *str)
      }
       
       // check if last wasn't the ansi reset string
-     if (last_was_reset_str != 1)
-     {
+//     if (last_was_reset_str != 1)
+//     {
        // write reset string
        newstr << ANSI_RESET_STR;
-     }
+//     }
       
      // write newline and null
-     newstr << ends;
+     //newstr << endl;
         
      return newstr.str();
      

@@ -30,73 +30,30 @@ using namespace std;
 // ## class SearchData ##
 
 SearchData::SearchData()
-{
-   // default constructor
-   m_preg = NULL;
-   m_ansi_color_code = NULL;
-   m_pf = NULL;
-   m_param_to_callback_fkn = NULL;
-}
+  : m_pf(NULL)
+{ }
 
 SearchData::~SearchData()
-{
-   if (m_preg)
-   {
-      // is allocated with malloc
-      free(m_preg);
-   }
-
-   if (m_ansi_color_code)
-   {
-      delete m_ansi_color_code;
-   }
-
-   if (m_param_to_callback_fkn)
-   {
-      delete m_param_to_callback_fkn;
-   }
-}
-
-void SearchData::set_color(char *color)
-{
-   // allocates memory and sets the m_ansi_color_code string to color
-
-   if (m_ansi_color_code)
-   {
-      delete m_ansi_color_code;
-   }
-
-   m_ansi_color_code = new char[strlen(color)+1];
-   strcpy(m_ansi_color_code, color);
-}
+{ }
 
 CfgFileParser::CfgFileParser()
-{
-   //m_items_list = NULL;
-   m_filename = NULL;
-   m_line = 0;
-}
+  : m_line(0)
+{ }
 
 CfgFileParser::~CfgFileParser()
-{
-   //free_items();
-   if (m_filename)
-   {
-      delete m_filename;
-   }
-}
+{ }
 
-char* CfgFileParser::read_line()
+char_ptr CfgFileParser::read_line()
 {
    // reads the next line from the file and increases the line counter
    // prints error message if no characters were read.
    // returns: string or NULL if error.
 
-   char *str = new char[MAX_CFG_LINE_LENGTH];
-   assert (str != NULL);
+   char_ptr str = make_char_ptr(MAX_CFG_LINE_LENGTH);
+   assert(str);
    
    // read next line
-   m_infile.getline(str, MAX_CFG_LINE_LENGTH);
+   m_infile.getline(str.get(), MAX_CFG_LINE_LENGTH);
 
    // increase line counter
    m_line++;
@@ -105,8 +62,7 @@ char* CfgFileParser::read_line()
    if (m_infile.gcount() <= 0)
    {
       // found EOF
-      delete str;
-      return NULL;
+      return char_ptr();
    }
 
    return str;
@@ -114,345 +70,325 @@ char* CfgFileParser::read_line()
 
 int CfgFileParser::read_item()
 {
-   // reads the color for the reg exps, then eads the reg exps and makes
-   // SearchData instances for them and adds to the m_items_list
-   // only reads and processes ONE item
-   // returns number of SearchData instances added to the list
+  // reads the color for the reg exps, then eads the reg exps and makes
+  // SearchData instances for them and adds to the m_items_list
+  // only reads and processes ONE item
+  // returns number of SearchData instances added to the list
 
-   int nr_items_added = 0;
-   
-   // is there a list?
-   //assert (m_items_list != NULL);
+  int nr_items_added = 0;
 
-   // is there a open file?
-   assert (m_infile);
+  // is there a list?
+  //assert (m_items_list != NULL);
 
-   // read color
-   char *color = read_color();
+  // is there a open file?
+  assert (m_infile);
 
-   if (color == NULL)
-   {
-      // didn't get a color
+  // read color
+  char_ptr color = read_color();
 
-      // quit, return 0
-      return 0;
-   }
-   
-   // TODO: add action reading
-   // read action
+  if (!color)
+  {
+    // didn't get a color
 
-   if (read_left() == 0)
-   {
-      // found '{'
+    // quit, return 0
+    return 0;
+  }
 
-      // loop until '}'
-      while (1)
+  // TODO: add action reading
+  // read action
+
+  if (read_left() == 0)
+  {
+    // found '{'
+
+    // loop until '}'
+    while (1)
+    {
+      // read string
+      char_ptr regexp = read_regexp();
+      if (regexp)
       {
-	 // read string
-	 char *regexp = read_regexp();
-	 if (regexp)
-	 {
-	    // check if it's a '}'
-	    if (regexp[0] == '}')
-	    {
-	       // free mem
-	       delete regexp;
-	       // stop looping
-	       break;
-	    }
-	    
-	    // has a regexp.. make a SearchData item
-	    
-	    gb::shared_ptr<SearchData> searchdata(new SearchData());
-	    // check allocation
-	    assert (searchdata);
-	    
-	    // set color
-	    searchdata->set_color(color);
-	    
-	    // allocate memory to the pattern storage buffer
-	    searchdata->m_preg = (regex_t*) malloc(sizeof(regex_t));
-	    // check allocation
-	    assert (searchdata->m_preg != NULL);
-	    
-	    // make compiled pattern buffer
-	    if (regcomp(searchdata->m_preg, regexp, REG_EXTENDED) != 0)
-	    {
-	       // failed to make compiled reg exp pattern
-	       cout << "colortail: Failed to make compiled reg exp pattern for "
-		    << "reg exp in config file " << m_filename << " at line "
-		    << m_line << ". Skipping this line." << endl;
-	    }
-	    else
-	    {
-	       // TODO: set callback fkn
-	       // TODO: set param to callback fkn
-	       
-	       // add the search data item to the items list
-	       m_items_list.add(searchdata);
-	       // increase items added counter
-	       nr_items_added++;
-	    }
-	    // free mem
-	    delete regexp;
-	 }
-	 else
-	 {
-	    // error reading string, eof maybe..
-	    // stop looping
-	    break;
-	 }
+        // check if it's a '}'
+        if (regexp.get()[0] == '}')
+        {
+          // stop looping
+          break;
+        }
+
+        // has a regexp.. make a SearchData item
+
+        gb::shared_ptr<SearchData> searchdata(new SearchData());
+        // check allocation
+        assert (searchdata);
+
+        // set color
+        searchdata->set_color(color);
+
+        // allocate memory to the pattern storage buffer
+        searchdata->m_preg = make_regex_t_ptr();
+        // check allocation
+        assert(searchdata->m_preg);
+
+        // make compiled pattern buffer
+        if (regcomp(searchdata->m_preg.get(), regexp.get(), REG_EXTENDED) != 0)
+        {
+          // failed to make compiled reg exp pattern
+          cout << "colortail: Failed to make compiled reg exp pattern for "
+          << "reg exp in config file " << m_filename.get() << " at line "
+          << m_line << ". Skipping this line." << endl;
+        }
+        else
+        {
+          // TODO: set callback fkn
+          // TODO: set param to callback fkn
+
+          // add the search data item to the items list
+          m_items_list.add(searchdata);
+          // increase items added counter
+          nr_items_added++;
+        }
       }
-   }
-   return nr_items_added;
+      else
+      {
+        // error reading string, eof maybe..
+        // stop looping
+        break;
+      }
+    }
+  }
+
+  return nr_items_added;
 }
 
-char* CfgFileParser::read_color()
+char_ptr CfgFileParser::read_color()
 {
-   // reads and skips lines until a 'COLOR' statement is found,
-   // it then extracts the color after 'COLOR' and returns a new string
-   // containing the ANSI color code for that string.
-   // RETURNS: the new string, NULL on error.
+  // reads and skips lines until a 'COLOR' statement is found,
+  // it then extracts the color after 'COLOR' and returns a new string
+  // containing the ANSI color code for that string.
+  // RETURNS: the new string, NULL on error.
 
-   // is there a open file?
-   assert (m_infile);
+  // is there a open file?
+  assert (m_infile);
 
-   while (1)
-   {
-      // read line
-      char *tmp = read_line();
-      if (!tmp)
+  while (1)
+  {
+    // read line
+    char_ptr tmp = read_line();
+    if (!tmp)
+    {
+      // found EOF
+      return tmp;
+    }
+
+    // got a line to look at
+
+    // process line if it's not empty or doesn't starts with a '#'
+    if (tmp.get()[0] != '\0' && tmp.get()[0] != '#')
+    {
+      if (strncmp(tmp.get(), "COLOR", 5) != 0)
       {
-	 	// found EOF
-	 	return NULL;
+        cout << "colortail: Error in config file: " << m_filename.get()
+        << " at line " << m_line << ". Skipping this line." << endl;
       }
-
-      // got a line to look at
-
-      // process line if it's not empty or doesn't starts with a '#'
-      if (tmp[0] != '\0' && tmp[0] != '#')
+      else 
       {
-	 if (strncmp(tmp, "COLOR", 5) != 0)
-	 {
-	    cout << "colortail: Error in config file: " << m_filename
-		 << " at line " << m_line << ". Skipping this line." << endl;
-	 }
-	 else 
-	 {
-	    int linepos = 5;
-	    char *color = new char[20];
+        int linepos = 5;
+        char_ptr color = make_char_ptr(20);
 
-	    // skip all spaces
-	    while (tmp[linepos] == ' ')
-	    {
-	       linepos++;
-	    }
+        // skip all spaces
+        while (tmp.get()[linepos] == ' ')
+        {
+          linepos++;
+        }
 
-	    // read which color it is
-	    int found_color = 0;
+        // read which color it is
+        int found_color = 0;
 
-	    if (strncmp(&tmp[linepos], "black", 5) == 0) {
-	       strcpy(color, BLACK);
-	       found_color = 1;
-	    }
+        if (strncmp(&tmp.get()[linepos], "black", 5) == 0) {
+          strcpy(color.get(), BLACK);
+          found_color = 1;
+        }
 
-	    if (strncmp(&tmp[linepos], "red", 3) == 0) {
-	       strcpy(color, RED);
-	       found_color = 1;
-	    }
-	    
-	    if (strncmp(&tmp[linepos], "green", 5) == 0) {
-	       strcpy(color, GREEN);
-	       found_color = 1;
-	    }
+        if (strncmp(&tmp.get()[linepos], "red", 3) == 0) {
+          strcpy(color.get(), RED);
+          found_color = 1;
+        }
 
-	    if (strncmp(&tmp[linepos], "yellow", 6) == 0) {
-	       strcpy(color, YELLOW);
-	       found_color = 1;
-	    }
+        if (strncmp(&tmp.get()[linepos], "green", 5) == 0) {
+          strcpy(color.get(), GREEN);
+          found_color = 1;
+        }
 
-	    if (strncmp(&tmp[linepos], "blue", 4) == 0) {
-	       strcpy(color, BLUE);
-	       found_color = 1;
-	    }
+        if (strncmp(&tmp.get()[linepos], "yellow", 6) == 0) {
+          strcpy(color.get(), YELLOW);
+          found_color = 1;
+        }
 
-	    if (strncmp(&tmp[linepos], "magenta", 7) == 0) {
-	       strcpy(color, MAGENTA);
-	       found_color = 1;
-	    }
+        if (strncmp(&tmp.get()[linepos], "blue", 4) == 0) {
+          strcpy(color.get(), BLUE);
+          found_color = 1;
+        }
 
-	    if (strncmp(&tmp[linepos], "cyan", 4) == 0) {
-	       strcpy(color, CYAN);
-	       found_color = 1;
-	    }
+        if (strncmp(&tmp.get()[linepos], "magenta", 7) == 0) {
+          strcpy(color.get(), MAGENTA);
+          found_color = 1;
+        }
 
-	    if (strncmp(&tmp[linepos], "white", 6) == 0) {
-	       strcpy(color, WHITE);
-	       found_color = 1;
-	    }
+        if (strncmp(&tmp.get()[linepos], "cyan", 4) == 0) {
+          strcpy(color.get(), CYAN);
+          found_color = 1;
+        }
 
-	    if (strncmp(&tmp[linepos], "brightblack", 6+5) == 0) {
-	       strcpy(color, BRIGHTBLACK);
-	       found_color = 1;
-	    }
+        if (strncmp(&tmp.get()[linepos], "white", 6) == 0) {
+          strcpy(color.get(), WHITE);
+          found_color = 1;
+        }
 
-	    if (strncmp(&tmp[linepos], "brightred", 6+3) == 0) {
-	       strcpy(color, BRIGHTRED);
-	       found_color = 1;
-	    }
-	    
-	    if (strncmp(&tmp[linepos], "brightgreen", 6+5) == 0) {
-	       strcpy(color, BRIGHTGREEN);
-	       found_color = 1;
-	    }
+        if (strncmp(&tmp.get()[linepos], "brightblack", 6+5) == 0) {
+          strcpy(color.get(), BRIGHTBLACK);
+          found_color = 1;
+        }
 
-	    if (strncmp(&tmp[linepos], "brightyellow", 6+6) == 0) {
-	       strcpy(color, BRIGHTYELLOW);
-	       found_color = 1;
-	    }
+        if (strncmp(&tmp.get()[linepos], "brightred", 6+3) == 0) {
+          strcpy(color.get(), BRIGHTRED);
+          found_color = 1;
+        }
 
-	    if (strncmp(&tmp[linepos], "brightblue", 6+4) == 0) {
-	       strcpy(color, BRIGHTBLUE);
-	       found_color = 1;
-	    }
+        if (strncmp(&tmp.get()[linepos], "brightgreen", 6+5) == 0) {
+          strcpy(color.get(), BRIGHTGREEN);
+          found_color = 1;
+        }
 
-	    if (strncmp(&tmp[linepos], "brightmagenta", 6+7) == 0) {
-	       strcpy(color, BRIGHTMAGENTA);
-	       found_color = 1;
-	    }
-	    
-            if (strncmp(&tmp[linepos], "brightcyan", 6+4) == 0) {
-	       strcpy(color, BRIGHTCYAN);
-	       found_color = 1;
-	    }
+        if (strncmp(&tmp.get()[linepos], "brightyellow", 6+6) == 0) {
+          strcpy(color.get(), BRIGHTYELLOW);
+          found_color = 1;
+        }
 
-	    if (strncmp(&tmp[linepos], "brightwhite", 6+5) == 0) {
-	       strcpy(color, BRIGHTWHITE);
-	       found_color = 1;
-	    }
+        if (strncmp(&tmp.get()[linepos], "brightblue", 6+4) == 0) {
+          strcpy(color.get(), BRIGHTBLUE);
+          found_color = 1;
+        }
 
-	    if (found_color == 0)
-	    {
-	       // didn't found color
-	       cout << "colortail: Don't recognize color in config file: "
-		    << m_filename << " at line " << m_line << endl;
+        if (strncmp(&tmp.get()[linepos], "brightmagenta", 6+7) == 0) {
+          strcpy(color.get(), BRIGHTMAGENTA);
+          found_color = 1;
+        }
 
-	       // free mem
-	       delete tmp;
-	       delete color;
-	       // error, return NULL
-	       return NULL;
-	    }
-	    else
-	    {
-	       // free mem
-	       delete tmp;
-	       // found color
-	       return color;
-	    }
-	 }
-	 // free memory for read line
-	 delete tmp;
+        if (strncmp(&tmp.get()[linepos], "brightcyan", 6+4) == 0) {
+          strcpy(color.get(), BRIGHTCYAN);
+          found_color = 1;
+        }
+
+        if (strncmp(&tmp.get()[linepos], "brightwhite", 6+5) == 0) {
+          strcpy(color.get(), BRIGHTWHITE);
+          found_color = 1;
+        }
+
+        if (found_color == 0)
+        {
+          // didn't found color
+          cout << "colortail: Don't recognize color in config file: "
+          << m_filename.get() << " at line " << m_line << endl;
+
+          // error, return NULL
+          return char_ptr();
+        }
+
+        return color;
       }
-   }
-   // should never execute this
-   return NULL;
+      // free memory for read line
+    }
+  }
+  // should never execute this
+  return char_ptr();
 }
 
 int CfgFileParser::read_left()
 {
-   // reads lines (skips empty and comments lines) until a '{' is found
-   // RETURNS: 0 if a '{' is found, 1 if not found, 2 if error
+  // reads lines (skips empty and comments lines) until a '{' is found
+  // RETURNS: 0 if a '{' is found, 1 if not found, 2 if error
 
-   // is there a open file?
-   assert (m_infile);
+  // is there a open file?
+  assert (m_infile);
 
-   while (1)
-   {
-      // read line
-      char *tmp = read_line();
-      if (!tmp)
+  while (1)
+  {
+    // read line
+    char_ptr tmp = read_line();
+    if (!tmp)
+    {
+      // error reading line
+      cout << "colortail: Error reading line in config file: "
+      << m_filename.get() << " at line " << m_line << "." << endl;
+      // error, return 2
+      return 2;
+    }
+
+    // got a line to look at
+
+    // process line if it's not empty or doesn't starts with a '#'
+    if (tmp.get()[0] != '\n' && tmp.get()[0] != '#')
+    {
+      if (tmp.get()[0] == '{')
       {
-	 // error reading line
-	 cout << "colortail: Error reading line in config file: "
-	      << m_filename << " at line " << m_line << "." << endl;
-	 // error, return 2
-	 return 2;
+        return 0;
       }
-
-      // got a line to look at
-
-      // process line if it's not empty or doesn't starts with a '#'
-      if (tmp[0] != '\n' && tmp[0] != '#')
+      else
       {
-	 if (tmp[0] == '{')
-	 {
-	    // free mem
-	    delete tmp;
+        // not a '{'
+        cout << "colortail: Error, expected '{' but found '"
+        << tmp.get()[0] << "' in config file: " << m_filename.get()
+        << " at line " << m_line << "." << endl;
+        // free mem
 
-	    return 0;
-	 }
-	 else
-	 {
-	    // not a '{'
-	    cout << "colortail: Error, expected '{' but found '"
-		 << tmp[0] << "' in config file: " << m_filename
-		 << " at line " << m_line << "." << endl;
-	    // free mem
-	    delete tmp;
-
-	    return 1;
-	 }
+        return 1;
       }
+    }
 
-      // free mem
-      delete tmp;
-   }
+  }
 
-   // should never get this far
-   return 1;
+  // should never get this far
+  return 1;
 }
 
-char* CfgFileParser::read_regexp()
+char_ptr CfgFileParser::read_regexp()
 {
-   // reads and skips empty and comments lines until a regexp is found
-   // RETURNS: a new string containing the reg exp, NULL on error
+  // reads and skips empty and comments lines until a regexp is found
+  // RETURNS: a new string containing the reg exp, NULL on error
 
-   // is there a open file?
-   assert (m_infile);
+  // is there a open file?
+  assert (m_infile);
 
-   while (1)
-   {
-      // read line
-      char *tmp = read_line();
+  while (1)
+  {
+    // read line
+    char_ptr tmp = read_line();
 
-      if (!tmp)
-      {
-	 // error reading line
-	 cout << "colortail: Error reading line in config file: "
-	      << m_filename << " at line " << m_line << "." << endl;
+    if (!tmp)
+    {
+      // error reading line
+      cout << "colortail: Error reading line in config file: "
+      << m_filename.get() << " at line " << m_line << "." << endl;
 
-	 // error, return NULL
-	 return NULL;
-      }
+      // error, return NULL
+      return tmp;
+    }
 
-      // got a line
+    // got a line
 
-      // process line if it's not empty or doesn't starts with a '#'
-      if (tmp[0] != '\n' && tmp[0] != '#')
-      {
-	 // found a string, return it
-	 return tmp;
-      }
+    // process line if it's not empty or doesn't starts with a '#'
+    if (tmp.get()[0] != '\n' && tmp.get()[0] != '#')
+    {
+      // found a string, return it
+      return tmp;
+    }
 
-      // this is a empty line or a comment, skip it
+    // this is a empty line or a comment, skip it
 
-      // free mem
-      delete tmp;
-   }
+  }
 
-   // should never get this far
-   return NULL;
+  // should never get this far
+  return char_ptr();
 }
 	 
 
@@ -478,16 +414,10 @@ int CfgFileParser::parse(const char *filename)
       // open failed
       cout << "colortail: Failed to open config file: " << filename << endl;
       return 0;
-   }
-
+   } 
    // save filename of config file
-   if (m_filename)
-   {
-      delete m_filename;
-   }
-
-   m_filename = new char[strlen(filename) + 1];
-   strcpy(m_filename, filename);
+   m_filename = make_char_ptr(strlen(filename) + 1);
+   strcpy(m_filename.get(), filename);
    
 
    int items_counter = 0;
@@ -517,4 +447,4 @@ void CfgFileParser::get_items_list(List<gb::shared_ptr<SearchData> > &list)
 
   m_items_list.delete_all_values();
 }
-	 
+
