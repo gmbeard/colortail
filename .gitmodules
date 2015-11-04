@@ -1,3 +1,6 @@
 [submodule "modules/shared_ptr"]
 	path = modules/shared_ptr
 	url = git@github.com:gmbeard/shared_ptr.git
+[submodule "modules/catch"]
+	path = modules/catch
+	url = https://github.com/philsquared/Catch.git
