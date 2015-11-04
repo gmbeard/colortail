@@ -22,13 +22,14 @@
 
 #include "TailFile.h"
 #include "List.h"
+#include "shared_ptr/shared_ptr.hpp"
 
 class ColorTail
 {
   private:
-   List<TailFile*> m_tailfiles;
+   List<gmb::memory::shared_ptr<TailFile> > m_tailfiles;
 
-   void free_list_items();
+   //void free_list_items();
 
   public:
    ColorTail();

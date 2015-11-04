@@ -20,6 +20,7 @@
 #ifndef _CfgFileParser_h_
 #define _CfgFileParser_h_
 
+#include "ColorTailTypes.h"
 #include "List.h"
 #include "config.h"
 #include "shared_ptr/shared_ptr.hpp"
@@ -43,14 +44,19 @@
 class SearchData
 {
   public:
+
    SearchData();
    ~SearchData();
-   void set_color(char *color);
+
+   void set_color(char_ptr color) 
+   { 
+     m_ansi_color_code = color; 
+   }
    
-   regex_t *m_preg;               // pattern storage buffer
-   char *m_ansi_color_code;       // color for row if match
-   void (*m_pf)(char*);           // callback fkn for action
-   char *m_param_to_callback_fkn; // parameters to callback fkn
+   regex_t_ptr m_preg;              // pattern storage buffer
+   char_ptr m_ansi_color_code;      // color for row if match
+   void (*m_pf)(char*);             // callback fkn for action
+   char_ptr m_param_to_callback_fkn;// parameters to callback fkn
 };
 
 
@@ -83,16 +89,16 @@ class CfgFileParser
   private:
    List<gmb::memory::shared_ptr<SearchData> > m_items_list;
    std::ifstream m_infile;
-   char *m_filename;
+   char_ptr m_filename;
    int m_line;
 
    void free_items();
-   char* read_line();
+   char_ptr read_line();
 
    int read_item();
-   char* read_color();
+   char_ptr read_color();
    int read_left();
-   char* read_regexp();
+   char_ptr read_regexp();
    
    
   public:

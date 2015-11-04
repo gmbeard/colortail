@@ -28,8 +28,6 @@
 #include "OptionsParser.h"
 #include "Colorizer.h"
 
-#include "shared_ptr/shared_ptr.hpp"
-
 namespace gb = gmb::memory;
 using namespace std;
 
@@ -41,27 +39,7 @@ ColorTail::ColorTail()
 
 // the destructor
 ColorTail::~ColorTail()
-{
-   // free the memory for the TailFile objects in the list
-   free_list_items();
-}
-
-void ColorTail::free_list_items()
-{
-   // removes all the elements from the list and frees the memory the objects
-   // uses
-
-   TailFile *tmp;
-
-   // go through all the elements in the list,
-   // and free each TailFile object
-   while (!m_tailfiles.is_empty())
-   {
-      tmp = m_tailfiles.first_element();
-      m_tailfiles.remove_first();
-      delete tmp;
-   }
-}
+{ } 
 
 // the starting method
 int ColorTail::start(int argc, char **argv)
@@ -82,7 +60,7 @@ int ColorTail::start(int argc, char **argv)
    for (int i = optind ; i < argc ; i++)
    {
       // new TailFile object
-      TailFile *new_tailfile = new TailFile();
+      gb::shared_ptr<TailFile> new_tailfile(new TailFile());
 
       gb::shared_ptr<Colorizer> colorizer;
 
@@ -101,7 +79,7 @@ int ColorTail::start(int argc, char **argv)
 	       colorizer = gb::shared_ptr<Colorizer>(new Colorizer(options->cfg_filenames[0]));
 
 	       // open the tailfile
-	       new_tailfile->open(argv[i], colorizer.get());
+	       new_tailfile->open(argv[i], colorizer);
 	    }
 	    else
 	    {
@@ -109,7 +87,7 @@ int ColorTail::start(int argc, char **argv)
 	       // print error
 	       cout << "colortail: Couldn't open global color config file. Skipping colors for the " << argv[i] << " file." << endl;
                // open the tailfile without colorizer
-	       new_tailfile->open(argv[i], NULL);
+	       new_tailfile->open(argv[i], gb::shared_ptr<Colorizer>());
 	    }
 	 }
 	 else
@@ -124,7 +102,7 @@ int ColorTail::start(int argc, char **argv)
           new Colorizer(options->cfg_filenames[tailfile_counter]));
 
 	       // open the tailfile
-	       new_tailfile->open(argv[i], colorizer.get());
+	       new_tailfile->open(argv[i], colorizer);
 	    }
 	    else
 	    {
@@ -143,7 +121,7 @@ int ColorTail::start(int argc, char **argv)
 		char* ccade = new char[cade.length()+1];
 		strcpy(ccade, cade.c_str());
 		colorizer = gb::shared_ptr<Colorizer>(new Colorizer(ccade));
-		new_tailfile->open(argv[i], colorizer.get());
+		new_tailfile->open(argv[i], colorizer);
 	    }
 	 }
       }
@@ -152,7 +130,7 @@ int ColorTail::start(int argc, char **argv)
 	 // no colors
 
 	 // open the tailfile without colorizer
-	 new_tailfile->open(argv[i], NULL);
+	 new_tailfile->open(argv[i], gb::shared_ptr<Colorizer>());
       }
 
       // add the tailfile to the end of the tailfile list
@@ -168,8 +146,8 @@ int ColorTail::start(int argc, char **argv)
       // not follow-mode, just print the tails of the files in the list
 
       // make an iterator
-      ListIterator<TailFile*> itr(m_tailfiles);
-      TailFile *current_file;
+      ListIterator<gb::shared_ptr<TailFile> > itr(m_tailfiles);
+      gb::shared_ptr<TailFile> current_file;
 
       // iterate through the file list
       for (itr.init() ; !itr ; ++itr)
@@ -192,8 +170,8 @@ int ColorTail::start(int argc, char **argv)
       // follow mode
 
       // make an iterator
-      ListIterator<TailFile*> itr(m_tailfiles);
-      TailFile *current_file;
+      ListIterator<gb::shared_ptr<TailFile> > itr(m_tailfiles);
+      gb::shared_ptr<TailFile> current_file;
 
       // iterate through the file list and print the no of rows wanted
       for (itr.init() ; !itr ; ++itr)

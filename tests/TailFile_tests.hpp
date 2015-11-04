@@ -27,7 +27,7 @@ TEST_CASE("TailFile objects")
   SECTION("Opening file results in valid state") 
   {
     gmb::memory::shared_ptr<Colorizer> colorizer; 
-    char_ptr filename(strdup("/var/log/system.log"), char_deleter());
+    char_ptr filename(strdup("/var/log/system.log"));
     
     REQUIRE(0 == f.open(filename.get(), colorizer));
   }

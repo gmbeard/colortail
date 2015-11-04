@@ -25,6 +25,7 @@
 
 #include "TailFile.h"
 
+#define STRCMP_EQ 0
 namespace gb = gmb::memory;
 using namespace std;
 
@@ -54,7 +55,8 @@ int TailFile::reopen()
   memset(&m_file_stats, 0, sizeof(struct stat));
   reopening = 1;
 
-  char_ptr tmp((char *)malloc(strlen(m_filename.get()) + 1), free);
+  char_ptr tmp = make_char_ptr(strlen(m_filename.get()) + 1);
+  
   strcpy(tmp.get(), m_filename.get());
 
   gb::shared_ptr<Colorizer> tmp_color;
@@ -63,13 +65,13 @@ int TailFile::reopen()
     tmp_color = gb::shared_ptr<Colorizer>(new Colorizer(*m_colorizer));
   }
 
-  int ret = open(tmp.get(), tmp_color.get());
+  int ret = open(tmp.get(), m_colorizer);
 
   reopening = 0;
   return ret;
 }
 
-int TailFile::open(char *filename, Colorizer *colorizer)
+int TailFile::open(char *filename, gb::shared_ptr<Colorizer> colorizer)
 {
    // Opens the file to tail. And sets the colorizer
    // Prints error message if failed to open file.
@@ -84,7 +86,7 @@ int TailFile::open(char *filename, Colorizer *colorizer)
    else
    {
       // save filename
-      m_filename = char_ptr((char *)malloc(strlen(filename) + 1), free);
+      m_filename = make_char_ptr(strlen(filename) + 1);
       strcpy(m_filename.get(), filename);
 
       // tries to open the file
@@ -102,14 +104,7 @@ int TailFile::open(char *filename, Colorizer *colorizer)
 	 return 1;
       }
 
-      // set the colorizer
-      if(NULL != colorizer) {
-        m_colorizer = gb::shared_ptr<Colorizer>(new Colorizer(*colorizer));
-      }
-      else {
-        m_colorizer = gb::shared_ptr<Colorizer>();
-      }
-
+      m_colorizer = colorizer;
       // set the saved stream position used to see if the file has
       // changed size to the end of the file
       m_position = reopening ? 0 : end_of_file_position();
@@ -119,53 +114,24 @@ int TailFile::open(char *filename, Colorizer *colorizer)
 
 void TailFile::print(int n)
 {
-   // print and colorize last n rows of the file
+  // print and colorize last n rows of the file
 
-   // is a file open
-   if (m_file == NULL)
-   {
-      // no file open
-      return;
-   }
+  // is a file open
+  if (m_file == NULL)
+  {
+    // no file open
+    return;
+  }
 
-   find_position(n);
+  find_position(n);
 
-//   const bufSize = 1024;
-   char buf[MAX_CHARS_READ];
+  //   const bufSize = 1024;
+  char buf[MAX_CHARS_READ];
 
-   // print file
-   int loop = 1;
-   while (loop)
-   {
-      // empty buffer
-      // not nessesary??
-      for (int i = 0 ; i < MAX_CHARS_READ ; i++)
-      {
-	 buf[i] = '\0';
-      }
-      
-      // read line
-      char *ret = fgets(buf, MAX_CHARS_READ-1, m_file);
-      
-      // read more than zero chars
-      if (ret != NULL)
-      {
-		// remove trailing newline. TODO only needed on OSX?
-/*		char last = buf[strlen(buf)-1];
-		if (last == '\n') {
-			buf[strlen(buf)-1] = '\0';
-		}*/
-	
-	 // print the line
-	 print_to_stdout(buf);
-      }
-      else
-      {
-	 // eof
-	 // stop looping
-	 loop = 0;
-      }
-   }   
+  while(NULL != fgets(&buf[0], sizeof(buf)-1, m_file)) {
+    print_to_stdout(&buf[0]);
+  }
+
 }
 
 void TailFile::printFilename()
@@ -352,84 +318,47 @@ int TailFile::more_to_read()
 
 void TailFile::follow_print(int n, int verbose, char *last_filename)
 {
-   // Reads n characters from the file and search from the beginning after a
-   // '\n'. If it is found that line is colorized and printed, and the
-   // current stream position is uppdated. If a line is found and the
-   // verbose flag is set. The filename is printed in ==> <== :s if it
-   // isn't the same file as the last line was printed from.
-   // If it isn't found, nothing is printed and the stream position
-   // isn't changed.
+  // Reads n characters from the file and search from the beginning after a
+  // '\n'. If it is found that line is colorized and printed, and the
+  // current stream position is uppdated. If a line is found and the
+  // verbose flag is set. The filename is printed in ==> <== :s if it
+  // isn't the same file as the last line was printed from.
+  // If it isn't found, nothing is printed and the stream position
+  // isn't changed.
 
-   // check if a file isn't open
-   if (m_file == NULL)
-   {
-      // no file open
-      // just return
-      return;
-   }
+  // check if a file isn't open
+  if (m_file == NULL)
+  {
+    // no file open
+    // just return
+    return;
+  }
 
-   // check if there isn't a follow buffer
-   if (!m_follow_buffer)
-   {
-      m_follow_buffer = gb::shared_ptr<ostringstream>(new ostringstream());
-   }
+  //  Clear any error flags on the file pointer...
+  clearerr(m_file);
 
-   // reset saved EOF result, see man fgetc(3)
-   clearerr(m_file);
-   
-   // read n characters
-   //char *ret = fgets(buf, (n + 1), m_file);
-   for (int i = 0 ; i < (n-1) ; i++)
-   {
-      int ch = fgetc(m_file);
+  static char buf[MAX_CHARS_READ+1];
 
-      // add the character to the string
-      m_follow_buffer->put(ch);
-      
-      // check if return
-      if (ch == '\n')
-      {
-	 // a return
+  // Loop for each line (or block of MAX_CHARS_READ size) ...
+  while(NULL != fgets(&buf[0], MAX_CHARS_READ, m_file)) {
+    
+    //  If the verbose flag is set, and we've not
+    //  already logged the filename, or logged a
+    //  different file since, then print the header...
+    if (verbose &&
+        (last_filename == NULL || 
+          STRCMP_EQ != strcmp(last_filename, m_filename.get()) )) {
 
-	 // chack if the verbose flag is set
-	 if (verbose)
-	 {
-	    // check if last_filename is NULL
-	    if (last_filename == NULL)
-	    {
-	       // print the name of this file
-	       printFilename();
-	       }
-	    else
-	    {
-	       // last_filename isn't NULL
-	       // check if same filename
-	       if (strcmp(last_filename, m_filename.get()) != 0)
-	       {
-		  // not same file
-		  // print the name of this file
-		  printFilename();
-	       }
-	    }
-	 }
+      printFilename();
+    }
 
-	string source_str = m_follow_buffer->str();
+    //  Send the block to the colorizer...
+    print_to_stdout(&buf[0]);
 
-	 // get the string
-	 const char *str = source_str.c_str();
-	 
-	 // print the line
-	 print_to_stdout(str);
+    //  Save the file position at this point (?)...
+    m_position = ftell(m_file);
 
-	 // update the saved stream position with the no of characters
-	 // until and including the '\n'
-
-	 m_position = ftell(m_file);
-
-	 // break the loop
-	 break;
-      }
-   }   
+  }   
 }
 
 void TailFile::print_to_stdout(const char *str)
@@ -447,7 +376,7 @@ void TailFile::print_to_stdout(const char *str)
    if (m_colorizer)
    {
       // colorize the string
-      const string& res = m_colorizer->colorize(str);
+      string res = m_colorizer->colorize(str);
       // print the new colorized string
       cout << res;
    }
