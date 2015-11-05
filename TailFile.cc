@@ -54,20 +54,9 @@ int TailFile::reopen()
   m_position = 0;
   memset(&m_file_stats, 0, sizeof(struct stat));
   reopening = 1;
-
-  char_ptr tmp = make_char_ptr(strlen(m_filename.get()) + 1);
-  
-  strcpy(tmp.get(), m_filename.get());
-
-  gb::shared_ptr<Colorizer> tmp_color;
-
-  if(m_colorizer) {
-    tmp_color = gb::shared_ptr<Colorizer>(new Colorizer(*m_colorizer));
-  }
-
-  int ret = open(tmp.get(), m_colorizer);
-
+  int ret = open(m_filename.get(), m_colorizer);
   reopening = 0;
+
   return ret;
 }
 
@@ -80,7 +69,7 @@ int TailFile::open(char *filename, gb::shared_ptr<Colorizer> colorizer)
 
    if (filename == NULL)
    {
-      cout << "colortail: Filename was NULL" << endl;
+      cerr << "colortail: Filename was NULL" << endl;
       return 1;
    }
    else
@@ -94,13 +83,15 @@ int TailFile::open(char *filename, gb::shared_ptr<Colorizer> colorizer)
       {
          m_file = stdin;
       }
-      else
+      else 
+      {
          m_file = fopen(filename, "r");
+      }
 
       if (m_file == NULL)
       {
 	 // open failed
-	 cout << "colortail: Failed to open file: " << filename << endl;
+	 cerr << "colortail: Failed to open file: " << filename << endl;
 	 return 1;
       }
 
@@ -146,14 +137,6 @@ char* TailFile::get_filename()
    // returns the filename
    return m_filename.get();
 }
-
-void TailFile::printAll()
-{
-   // print the complete file, for debugging
-   const int bufSize = 1024;
-   char buf[bufSize];
-}
-
 
 void TailFile::find_position(int n)
 {

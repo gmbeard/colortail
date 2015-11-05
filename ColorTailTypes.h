@@ -49,12 +49,11 @@ namespace detail
 typedef gmb::memory::shared_ptr<regex_t, detail::regex_t_deleter>
   regex_t_ptr;
 
-typedef gmb::memory::shared_ptr<char, detail::char_deleter>
-  char_ptr;
+typedef gmb::memory::shared_ptr<char[]> char_ptr;
 
 inline char_ptr make_char_ptr(size_t n)
 {
-  return char_ptr(malloc(n));
+  return char_ptr(new char[n]);
 }
 
 inline regex_t_ptr make_regex_t_ptr()

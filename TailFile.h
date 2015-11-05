@@ -23,6 +23,7 @@
 #include "ColorTailTypes.h"
 #include "Colorizer.h"
 #include "shared_ptr/shared_ptr.hpp"
+#include "scoped_ptr/scoped_ptr.hpp"
 
 #include <stdio.h>
 #include <sstream>
@@ -81,9 +82,6 @@ public:
 
   // returns the filename
   char* get_filename();
-  
-  // prints the complete file, for debugging
-  void printAll();
 
 };
 
