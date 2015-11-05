@@ -36,14 +36,6 @@ namespace detail
       free(p);
     }
   };
-
-  struct char_deleter
-  {
-    void operator()(void *p)
-    {
-      free(p);
-    }
-  };
 }
 
 typedef gmb::memory::shared_ptr<regex_t, detail::regex_t_deleter>
