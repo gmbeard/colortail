@@ -65,6 +65,11 @@ string Colorizer::colorize(const char *str)
   // the colorized version of str
   // RETURN: new string with result
 
+  if(str && str[strlen(str)-1] == '\n') {
+    //  Urgh, sorry...
+    const_cast<char *>(str)[strlen(str)-1] = '\0';
+  }
+
   regmatch_t pmatch[11];
   int found = 0, submatch = 0, j;
   char color[MAX_CHARS_READ][20];
@@ -131,6 +136,7 @@ string Colorizer::colorize(const char *str)
          // write ansi reset str and a newline
          newstr.write(ANSI_RESET_STR, strlen(ANSI_RESET_STR)); // << endl << ends;
          // return the new string
+         newstr.write("\n", 1);
          return newstr.str();
        }
      }
@@ -146,6 +152,7 @@ string Colorizer::colorize(const char *str)
 
      newstr.write(ANSI_RESET_STR, strlen(ANSI_RESET_STR));
      // return the new string
+     newstr.write("\n", 1);
      return newstr.str();
    }
 
@@ -190,6 +197,7 @@ string Colorizer::colorize(const char *str)
 //     {
        // write reset string
        newstr.write(ANSI_RESET_STR, strlen(ANSI_RESET_STR));
+       newstr.write("\n", 1);
 //     }
       
      // write newline and null
