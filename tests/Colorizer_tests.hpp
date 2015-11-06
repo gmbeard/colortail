@@ -16,6 +16,8 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
+#ifndef COLORTAIL_TESTS_COLORIZER_TESTS_HPP_INCLUDED
+#define COLORTAIL_TESTS_COLORIZER_TESTS_HPP_INCLUDED 1
 
 #include <catch.hpp>
 #include "TailFile.h"
@@ -38,3 +40,5 @@ TEST_CASE("Colorizer Tests")
     REQUIRE(!colorizer.m_items_list.is_empty());
   }
 }
+
+#endif //COLORTAIL_TESTS_COLORIZER_TESTS_HPP_INCLUDED

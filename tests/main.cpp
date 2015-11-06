@@ -22,4 +22,4 @@
 //#include "simple.hpp"
 #include "TailFile_tests.hpp"
 #include "Colorizer_tests.hpp"
-
+#include "Parser_tests.hpp"

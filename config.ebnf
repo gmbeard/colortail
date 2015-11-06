@@ -1,0 +1,21 @@
+config ::= comment | block
+
+comment ::= '#', [(any)*], newline
+
+block ::= colourspec, matchspec
+
+colorspec ::= 'COLOR', ' ', token, newline
+
+matchspec ::= '{', (matchblock)*, '}', newline
+
+matchblock ::= comment | match
+
+match ::= [(any)*], newline
+
+any ::= !newline
+
+whitespace ::= '\t' | ' '
+
+newline ::= ['\r'], '\n'
+
+token := ([a-z] | [A-Z] | [0-9])*
