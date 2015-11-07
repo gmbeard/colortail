@@ -31,18 +31,18 @@ namespace colortail { namespace parser
     ~or_expression()
     { }
 
-    friend bool evaluate(char c, or_expression const &e)
+    friend bool evaluate(char c, or_expression const *e)
     {
-      return e.lhs_->evaluate(c) || e.rhs_->evaluate(c);
+      return (*e).lhs_->evaluate(c) || (*e).rhs_->evaluate(c);
     }
 
-    friend void expand(char c, expression_stack &s, or_expression const &e)
+    friend void expand(char c, expression_stack &s, or_expression const *e)
     {
-      if(e.lhs_->evaluate(c)) {
-        e.lhs_->expand(c, s);
+      if((*e).lhs_->evaluate(c)) {
+        (*e).lhs_->expand(c, s);
       }
       else {
-        e.rhs_->expand(c, s);
+        (*e).rhs_->expand(c, s);
       }
     }
 
@@ -75,19 +75,19 @@ namespace colortail { namespace parser
     ~repeat_until_expression()
     { }
 
-    friend bool evaluate(char c, repeat_until_expression const &e)
+    friend bool evaluate(char c, repeat_until_expression const *e)
     {
-      return e.repeat_->evaluate(c) || e.until_->evaluate(c);
+      return (*e).repeat_->evaluate(c) || (*e).until_->evaluate(c);
     }
 
-    friend void expand(char c, expression_stack &s, repeat_until_expression const &e)
+    friend void expand(char c, expression_stack &s, repeat_until_expression const *e)
     {
-      if(e.repeat_->evaluate(c)) {
-        push(s, repeat_until_expression(*e.repeat_, *e.until_));
-        e.repeat_->expand(c, s);
+      if((*e).repeat_->evaluate(c)) {
+        push(s, repeat_until_expression(*e));
+        (*e).repeat_->expand(c, s);
       }
       else {
-        e.until_->expand(c, s);
+        (*e).until_->expand(c, s);
       }
     }
 

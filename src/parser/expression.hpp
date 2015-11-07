@@ -115,7 +115,7 @@ namespace colortail { namespace parser
     {
       return static_cast<expression_impl const *>(e)->matches(c);
     }
-    
+
     static expression_vtbl vtbl_;
 
   private:

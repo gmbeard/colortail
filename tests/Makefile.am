@@ -18,5 +18,8 @@ colortail_tests_SOURCES = \
   $(top_srcdir)/TailFile.cc \
   $(top_srcdir)/Usage.cc \
   $(top_srcdir)/src/parser/expression.cpp \
-  main.cpp
+  main.cpp \
+  Colorizer_tests.cpp \
+  TailFile_tests.cpp \
+  Parser_tests.cpp
 

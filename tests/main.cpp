@@ -16,10 +16,5 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
-
 #define CATCH_CONFIG_MAIN
-
-//#include "simple.hpp"
-#include "TailFile_tests.hpp"
-#include "Colorizer_tests.hpp"
-#include "Parser_tests.hpp"
+#include <catch.hpp>
