@@ -83,7 +83,7 @@ namespace colortail { namespace parser
     friend void expand(char c, expression_stack &s, repeat_until_expression const *e)
     {
       if((*e).repeat_->evaluate(c)) {
-        push(s, repeat_until_expression(*e));
+        push(s, *e);
         (*e).repeat_->expand(c, s);
       }
       else {
