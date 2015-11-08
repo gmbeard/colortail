@@ -42,6 +42,7 @@ namespace colortail { namespace parser
       }
       catch(...) {
         deallocate_expression(p, sizeof(expression_impl<T>), &val);
+        throw;
       }
 
       exp.reset(p);
