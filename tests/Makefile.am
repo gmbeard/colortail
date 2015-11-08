@@ -1,12 +1,3 @@
-colortail_tests_CPPFLAGS = \
-  -I$(top_srcdir)/modules/catch/include \
-  -I$(top_srcdir)/modules/shared_ptr \
-  -I$(top_srcdir) \
-  -I$(top_srcdir)/src \
-  -DCONF_DIR="$(topsrc_dir)/example-conf"
-
-colortail_tests_CXXFLAGS = -g -O0 -Wall
-
 bin_PROGRAMS = colortail_tests
 
 colortail_tests_SOURCES = \
@@ -22,4 +13,13 @@ colortail_tests_SOURCES = \
   Colorizer_tests.cpp \
   TailFile_tests.cpp \
   Parser_tests.cpp
+
+colortail_tests_CPPFLAGS = \
+  -I$(top_srcdir)/modules/catch/include \
+  -I$(top_srcdir)/modules/shared_ptr \
+  -I$(top_srcdir) \
+  -I$(top_srcdir)/src \
+  -DCONF_DIR="$(topsrc_dir)/example-conf" \
+  -DUNIT_TESTING=1
+
 

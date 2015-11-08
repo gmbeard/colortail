@@ -13,16 +13,50 @@ AM_INIT_AUTOMAKE($PACKAGE, $VERSION, no-define)
 
 AM_MAINTAINER_MODE
 
-AM_CONFIG_HEADER(config.h)
+dnl - This is required before checking for and
+dnl   C++ headers...
+AC_LANG([C++])
 
-AC_DEFINE_UNQUOTED(COLORTAIL_VERSION, "$COLORTAIL_VERSION")
-AC_SUBST(COLORTAIL_VERSION)
-
-dnl Checks for programs.
+dnl - Checks for programs.
 AC_PROG_CXX
 AC_PROG_INSTALL
 
-dnl Checks for libraries.
+AM_CONFIG_HEADER(config.h)
+
+AC_CHECK_HEADER(
+  [$srcdir/modules/shared_ptr/shared_ptr/shared_ptr.hpp],
+  [],
+  [AC_MSG_ERROR(Couldn't find shared_ptr module. Maybe you forgot to run 'git submodule init')]
+)
+
+AC_ARG_WITH(tests, [  --with-tests          enable tests])
+
+dnl Check to see if tests have been enabled...
+if test "$with_tests" == "yes"; then
+  AC_CHECK_FILE(
+    [$srcdir/modules/catch/include/catch.hpp],
+    [],
+    [have_test_module=0]
+  )
+  if test "$have_test_module" == "0"; then
+    AC_MSG_WARN([Tests enabled but the test submodule wasn't found. Disabling test])
+    WITH_TESTS=
+    TEST_OUTPUT=
+  else
+    AC_MSG_NOTICE([Enabling tests])
+    WITH_TESTS="tests"
+    TEST_OUTPUT=" tests/Makefile"
+  fi
+else
+  AC_MSG_NOTICE([Disabling tests])
+  WITH_TESTS=
+  TEST_OUTPUT=
+fi
+
+AC_SUBST([WITH_TESTS])
+
+AC_DEFINE_UNQUOTED(COLORTAIL_VERSION, "$COLORTAIL_VERSION")
+AC_SUBST(COLORTAIL_VERSION)
 
 dnl Checks for header files.
 AC_HEADER_STDC
@@ -35,6 +69,6 @@ dnl Checks for library functions.
 AC_TYPE_SIGNAL
 AC_CHECK_FUNCS(regcomp)
 
-AC_OUTPUT(Makefile example-conf/Makefile tests/Makefile)
+AC_OUTPUT(Makefile example-conf/Makefile $TEST_OUTPUT)
 
 
